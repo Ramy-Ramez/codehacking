@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Photo;
 use App\Role;
 use App\User;
 use Illuminate\Http\Request;
@@ -44,8 +45,24 @@ class AdminUsersController extends Controller
     public function store(UsersRequest $request)
     {
         //
-        User::create($request->all());
-        return redirect('/admin/users');
+        //User::create($request->all());
+        $input = $request->all();
+        //dd($request);
+
+        //If there is a photo uploaded
+        if ($file = $request->file('photo_id')) {
+            //return 'Photo exists FROM ADMINUSERSCONTROLLER.PHP<br>';
+            $name = time() . $file->getClientOriginalName();
+            $file->move('images', $name);
+            $photo = Photo::create(['file' => $name]);//once we create a photo, then we have a photo_id available for us
+            $input['photo_id'] = $photo->id;
+        }
+
+        //If there is no photo uploaded
+        $input['password'] = bcrypt($request->password);
+        User::create($input);
+
+        //return redirect('/admin/users');
         //return $request->all();
     }
 
