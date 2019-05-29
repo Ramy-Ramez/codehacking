@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UsersEditRequestRequest as UsersEditRequestRequestAlias;
 use App\Photo;
 use App\Role;
 use App\User;
 use Illuminate\Http\Request;
 use App\Http\Requests\UsersRequest;
+use App\Http\Requests\UsersEditRequest;
 
 use App\Http\Requests;
 
@@ -45,8 +47,14 @@ class AdminUsersController extends Controller
     public function store(UsersRequest $request)
     {
         //
+        if (trim($request->password) == '') {//If the password field is empty
+            $input = $request->except('password');//We gonna pass everything except the password field if it is empty
+        } else {
+            $input = $request->all();
+            $input['password'] = bcrypt($request->password);
+        }
         //User::create($request->all());
-        $input = $request->all();
+        //$input = $request->all();
         //dd($request);
 
         //If there is a photo uploaded
@@ -54,15 +62,15 @@ class AdminUsersController extends Controller
             //return 'Photo exists FROM ADMINUSERSCONTROLLER.PHP<br>';
             $name = time() . $file->getClientOriginalName();
             $file->move('images', $name);
-            $photo = Photo::create(['file' => $name]);//once we create a photo, then we have a photo_id available for us
+            $photo = Photo::create(['file' => $name]);//once we create a photo, then we have a photo_id available for us //file is the column name in photos table in database
             $input['photo_id'] = $photo->id;
         }
 
         //If there is no photo uploaded
-        $input['password'] = bcrypt($request->password);
+
         User::create($input);
 
-        //return redirect('/admin/users');
+        return redirect('/admin/users');
         //return $request->all();
     }
 
@@ -87,7 +95,9 @@ class AdminUsersController extends Controller
     public function edit($id)
     {
         //
-        return view('admin.users.edit');
+        $user = User::findOrFail($id);
+        $roles = Role::lists('name', 'id')->all();
+        return view('admin.users.edit', compact('user', 'roles'));
     }
 
     /**
@@ -97,9 +107,26 @@ class AdminUsersController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(UsersEditRequest $request, $id)
     {
         //
+        //return $request->all();
+        $user = User::findOrFail($id);
+        if (trim($request->password) == '') {//If the password field is empty
+            $input = $request->except('password');//We gonna pass everything except the password field if it is empty
+        } else {
+            $input = $request->all();
+            $input['password'] = bcrypt($request->password);
+        }
+        $input = $request->all();
+        if ($file = $request->file('photo_id')) {
+            $name = time() . $file->getClientOriginalName();
+            $file->move('images', $name);
+            $photo = Photo::create(['file' => $name]);
+            $input['photo_id'] = $photo->id;
+        }
+        $user->update($input);
+        return redirect('/admin/users');
     }
 
     /**
